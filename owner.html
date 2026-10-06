@@ -1,0 +1,283 @@
+<!-- ═══════════════════════════════════════════════════════════════════
+     GOLD MS ENTERPRISE — owner.html
+     لوحة مالك النظام (SaaS Owner Panel)
+     ─────────────────────────────────────────────────────────────────
+     ⚠️ هذا الملف منفصل تماماً عن التطبيق الرئيسي
+     ⚠️ لا تشارك رابط هذه الصفحة مع أحد غير مالك النظام
+     ═══════════════════════════════════════════════════════════════════ -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#D4A017">
+<meta name="robots" content="noindex, nofollow">
+<title>SaaS Owner Panel — Gold MS</title>
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="application-name" content="SaaS Owner Panel" />
+<meta name="msapplication-TileColor" content="#D4A017" />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!-- Owner Styles -->
+<link rel="stylesheet" href="owner-style.css">
+
+<!-- Libraries -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+<script>
+  // shim: bcryptjs v2.4.3 يصدّر نفسه كـ dcodeIO.bcrypt مش bcrypt
+  window.addEventListener('load', function () {
+    if (!window.bcrypt && window.dcodeIO && window.dcodeIO.bcrypt) {
+      window.bcrypt = window.dcodeIO.bcrypt;
+    }
+  });
+</script>
+<script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<!-- Owner Scripts -->
+<script defer src="js/00c-rls-wrapper.js"></script>
+<script defer src="js/00-saas-owner.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     OWNER LOGIN SCREEN
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="owner-login-screen">
+  <div class="owner-login-card">
+    <div class="owner-brand">
+      <div class="logo">Au</div>
+      <div>
+        <h1>SaaS Owner Panel</h1>
+        <p>لوحة إدارة الأنشطة</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         🆕 قسم الاتصال بـ Supabase (قبل تسجيل الدخول)
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="sb-config-section" id="sb-config-section">
+
+      <button type="button" class="sb-config-toggle" id="sb-config-toggle">
+        <i data-lucide="database"></i>
+        <span>إعدادات الاتصال بـ Supabase</span>
+        <span class="sb-status-dot" id="sb-status-dot"></span>
+      </button>
+
+      <div class="sb-config-panel hidden" id="sb-config-panel">
+
+        <div class="sb-config-note">
+          <i data-lucide="info"></i>
+          <div>
+            أدخل بيانات مشروع Supabase الخاص بك للربط مع قاعدة البيانات.
+            القيم تُحفظ في <code>localStorage</code> على هذا الجهاز فقط.
+          </div>
+        </div>
+
+        <div class="field">
+          <label>
+            <i data-lucide="link"></i>
+            Project URL
+            <span class="req">*</span>
+          </label>
+          <input type="text"
+                 id="sb-config-url"
+                 dir="ltr"
+                 class="mono"
+                 placeholder="https://xxxxxxxx.supabase.co"
+                 autocomplete="off"
+                 autocapitalize="off"
+                 spellcheck="false">
+        </div>
+
+        <div class="field">
+          <label>
+            <i data-lucide="key"></i>
+            Anon Public Key
+            <span class="req">*</span>
+          </label>
+          <div class="password-wrap">
+            <input type="password"
+                   id="sb-config-key"
+                   dir="ltr"
+                   class="mono"
+                   placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+                   autocomplete="off"
+                   autocapitalize="off"
+                   spellcheck="false">
+            <button type="button"
+                    class="password-toggle"
+                    id="sb-config-key-toggle"
+                    aria-label="إظهار المفتاح">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+          <span class="hint">
+            استخدم مفتاح <b>anon public</b> فقط — لا تستخدم service_role
+          </span>
+        </div>
+
+        <div class="sb-config-actions">
+          <button type="button" class="btn btn-primary" id="sb-config-save">
+            <i data-lucide="save"></i>
+            حفظ وإعادة التحميل
+          </button>
+
+          <button type="button" class="btn btn-info" id="sb-config-test">
+            <i data-lucide="plug-zap"></i>
+            اختبار الاتصال
+          </button>
+
+          <button type="button" class="btn btn-danger" id="sb-config-clear">
+            <i data-lucide="trash-2"></i>
+            حذف
+          </button>
+        </div>
+
+        <div class="sb-config-error hidden" id="sb-config-error"></div>
+
+        <div class="sb-config-footer">
+          <a href="https://supabase.com/dashboard" target="_blank" rel="noopener">
+            <i data-lucide="external-link"></i>
+            فتح Supabase Dashboard
+          </a>
+        </div>
+
+      </div>
+    </div>
+    <!-- ═══════════════════════════════════════════════════════════════
+         نهاية قسم Supabase
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <form id="owner-login-form" autocomplete="on">
+      <div class="field">
+        <label for="owner-username">Username</label>
+        <input type="text" id="owner-username"
+               required
+               dir="ltr"
+               class="mono"
+               autocomplete="username"
+               placeholder="owner"
+               spellcheck="false">
+      </div>
+
+      <div class="field">
+        <label for="owner-password">Password</label>
+        <input type="password" id="owner-password"
+               required
+               dir="ltr"
+               class="mono"
+               autocomplete="current-password"
+               placeholder="••••••••">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg btn-block" id="owner-login-btn">
+        <i data-lucide="log-in"></i>
+        تسجيل الدخول
+      </button>
+
+      <p id="owner-login-error" class="hidden"></p>
+    </form>
+
+    <div class="owner-login-footer">
+      <i data-lucide="shield" style="width:12px;height:12px"></i>
+      صفحة محمية — لمالك النظام فقط
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     OWNER APP SHELL
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="owner-app" class="hidden">
+
+  <!-- Topbar -->
+  <header class="owner-topbar">
+    <div class="brand">
+      <div class="brand-logo">Au</div>
+      <div>
+        <strong>SaaS Owner</strong>
+        <span id="owner-name-display">—</span>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <button class="icon-btn" id="owner-refresh-btn" title="تحديث البيانات"
+            type="button">
+      <i data-lucide="refresh-cw"></i>
+    </button>
+
+    <button class="icon-btn" id="owner-logout-btn" title="خروج"
+            type="button">
+      <i data-lucide="log-out"></i>
+    </button>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="owner-tabs">
+    <button class="otab active" data-owner-tab="dashboard" type="button">
+      <i data-lucide="layout-dashboard"></i>
+      لوحة التحكم
+    </button>
+
+    <button class="otab" data-owner-tab="businesses" type="button">
+      <i data-lucide="building-2"></i>
+      الأنشطة
+    </button>
+
+    <button class="otab" data-owner-tab="payments" type="button">
+      <i data-lucide="banknote"></i>
+      المدفوعات
+    </button>
+
+    <button class="otab" data-owner-tab="audit" type="button">
+      <i data-lucide="scroll-text"></i>
+      السجل
+    </button>
+
+    <button class="otab" data-owner-tab="settings" type="button">
+      <i data-lucide="settings"></i>
+      الإعدادات
+    </button>
+  </nav>
+
+  <!-- Content -->
+  <main id="owner-content">
+    <div style="padding:60px;text-align:center">
+      <div class="spinner" style="margin:0 auto 14px;
+                  width:36px;height:36px;border:3px solid var(--border);
+                  border-top-color:var(--primary);border-radius:50%;
+                  animation:spin 1s linear infinite"></div>
+      <div style="font-size:13px;color:var(--muted);font-weight:700">
+        جارٍ التحميل…
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     OVERLAYS
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="toasts"></div>
+<div id="owner-modal-root"></div>
+
+<style>
+/* Progress spinner fallback (لو ما كانش في owner-style.css) */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+
+</body>
+</html>
